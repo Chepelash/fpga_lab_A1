@@ -12,13 +12,6 @@ module rtc_clock (
   output logic [9:0] milliseconds_o
 );
 
-/*
-  3'b111 - hours_o setup;
-  3'b110 - minutes_o setup;
-  3'b101 - seconds_o setup;
-  3'b011 - milliseconds_o setup;
-  3'b010 - reset all values;
-*/
 
 localparam logic [2:0] SET_HOURS        = 3'b111;
 localparam logic [2:0] SET_MINUTES      = 3'b110;
