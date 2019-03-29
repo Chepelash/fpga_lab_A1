@@ -30,6 +30,16 @@ logic set_sec_cmd;
 logic set_min_cmd;
 logic set_hour_cmd;
 
+
+always_comb
+  begin
+    milliseconds_overflow = ( milliseconds_o == 10'd999 ) ? '1 : '0;    
+    seconds_overflow      = ( milliseconds_overflow && ( seconds_o == 6'd59 ) ) ? '1 : '0;
+    minutes_overflow      = ( milliseconds_overflow && seconds_overflow && ( minutes_o == 6'd59 ) ) ?
+                             '1 : '0;
+    
+  end
+
 always_ff @( posedge clk_i )
   begin
     if( cmd_valid_i )
@@ -94,22 +104,16 @@ always_ff @( posedge clk_i )
     else if( set_min_cmd )
       begin
         if( cmd_data_reg[9:4] > 6'd59 )
-          minutes_o <= ( cmd_data_reg[9:4] % 6'd59 );
+          minutes_o <= ( cmd_data_reg[9:4] % 6'd60 );
         else
           minutes_o <= cmd_data_reg[9:4];
       end
     else if( seconds_overflow )
       begin
-        if( minutes_o == 6'd59 )
-          begin
-            minutes_overflow <= '1;
-            minutes_o        <= '0;
-          end
+        if( minutes_o == 6'd59 )           
+          minutes_o <= '0;
         else
-          begin
-            minutes_overflow <= '0;
-            minutes_o        <= minutes_o + 1'b1;
-          end
+          minutes_o <= minutes_o + 1'b1;
       end
   end
 
@@ -127,25 +131,20 @@ always_ff @( posedge clk_i )
     else if( set_sec_cmd )
       begin
         if( cmd_data_reg[9:4] > 6'd59 )
-          seconds_o <= ( cmd_data_reg[9:4] % 6'd59 );
+          seconds_o <= ( cmd_data_reg[9:4] % 6'd60 );
         else
           seconds_o <= cmd_data_reg[9:4];
       end
     else if( milliseconds_overflow )
       begin
         if( seconds_o == 6'd59)
-          begin
-            seconds_overflow <= '1;
-            seconds_o        <= '0;
-          end
+          seconds_o        <= '0;
         else
-          begin
-            seconds_overflow <= '0;
-            seconds_o        <= seconds_o + 1'b1;
-          end
+          seconds_o <= seconds_o + 1'b1;
       end
-  end
 
+  end
+  
   
 
 // milliseconds_o
@@ -167,17 +166,11 @@ always_ff @( posedge clk_i )
           milliseconds_o <= cmd_data_reg;
       end
     else
-      begin        
+      begin
         if( milliseconds_o == 10'd999 )
-          begin
-            milliseconds_overflow <= '1;
-            milliseconds_o        <= '0;
-          end
+          milliseconds_o <= '0;
         else
-          begin
-            milliseconds_overflow <= '0;
-            milliseconds_o        <= milliseconds_o + 1'b1;
-          end
+          milliseconds_o <= milliseconds_o + 1'b1;
       end
   end
 
