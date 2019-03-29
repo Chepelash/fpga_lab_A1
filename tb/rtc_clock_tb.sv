@@ -65,13 +65,13 @@ task automatic send_cmd;
   input [2:0] cmd_type;
   
   begin
-    cmd_data_i <= cmd_data;
-    cmd_type_i <= cmd_type;
-    cmd_data_i <= '1;
+    cmd_data_i  <= cmd_data;
+    cmd_type_i  <= cmd_type;
+    cmd_valid_i <= '1;
     @( posedge clk );
-    cmd_data_i <= '1;
-    cmd_data_i <= '0;
-    cmd_type_i <= '0;
+    cmd_data_i  <= '0;
+    cmd_valid_i <= '0;
+    cmd_type_i  <= '0;
   end
 endtask
 
@@ -79,7 +79,7 @@ endtask
 task automatic check_ms_proc;
   int ms_cntr;
   
-  repeat(1000)
+  repeat(1002)
     begin
       if( ms_cntr++ != milliseconds_o )
         begin
@@ -101,7 +101,7 @@ endtask
 task automatic check_s_proc;
   int s_cntr;
   
-  repeat(1000*60)
+  repeat(62)
     begin
       if( s_cntr++ != seconds_o )
         begin
@@ -109,10 +109,10 @@ task automatic check_s_proc;
           $stop();
         end    
         
-      if( s_cntr == 1000*60 )
+      if( s_cntr == 60 )
         s_cntr = 0;
-        
-      @( posedge clk );            
+      for( int i = 0; i < 1000; i++ )
+        @( posedge clk );            
     end
   $display("Seconds simple test - OK!");
 endtask
@@ -121,7 +121,7 @@ endtask
 task automatic check_min_proc;
   int min_cntr;
   
-  repeat(1000*60*60)
+  repeat(62)
     begin
       if( min_cntr++ != minutes_o )
         begin
@@ -129,10 +129,10 @@ task automatic check_min_proc;
           $stop();
         end    
         
-      if( min_cntr == 1000*60*60 )
+      if( min_cntr == 60 )
         min_cntr = 0;
-        
-      @( posedge clk );            
+      for( int i = 0; i < 1000*60; i++)
+        @( posedge clk );            
     end
     $display("Minutes simple test - OK!");
 endtask
@@ -141,7 +141,7 @@ endtask
 task automatic check_hr_proc;
   int h_cntr;
   
-  repeat(1000*60*60*24)
+  repeat(26)
     begin
       if( h_cntr++ != hours_o )
         begin
@@ -149,12 +149,124 @@ task automatic check_hr_proc;
           $stop();
         end    
         
-      if( h_cntr == 1000*60*60*24 )
+      if( h_cntr == 24 )
         h_cntr = 0;
-        
-      @( posedge clk );            
+      for( int i = 0; i < (1000*60*60); i++ )
+        @( posedge clk );            
     end
     $display("Hours simple test - OK!");
+endtask
+
+
+task automatic check_set_reset;
+  bit [4:0] rand_hour;
+  bit [5:0] rand_minute;
+  bit [5:0] rand_second;
+  bit [9:0] rand_millisecond;
+  bit [9:0] cmd_data;
+  bit [2:0] cmd_type;
+  
+  $write("Testing hour set - ");
+  for( int i = 0; i < 100; i++ )
+    begin
+      rand_hour = $urandom_range(2**5 - 1, 0);
+      cmd_data[9:5] = rand_hour;
+      send_cmd(cmd_data, SET_HOURS);
+      @( negedge clk );
+      @( negedge clk );
+      
+      if( hours_o != ( rand_hour % 24 ) )
+        begin
+          $display("Hour didn't setup!");
+          $stop();
+        end
+      cmd_data = 0;
+    end
+  $display("OK!");
+  
+  $write("Testing minutes set - ");
+  for( int i = 0; i < 100; i++ )
+    begin
+      rand_minute = $urandom_range(2**6 - 1, 0);
+      cmd_data[9:4] = rand_minute;
+      send_cmd(cmd_data, SET_MINUTES);
+      @( negedge clk );
+      @( negedge clk );
+      
+      if( minutes_o != ( rand_minute % 60 ) )
+        begin
+          $display("Minutes didn't setup!");
+          $stop();
+        end
+      cmd_data = 0;
+    end
+  $display("OK!");
+  
+  $write("Testing seconds set - ");
+  for( int i = 0; i < 100; i++ )
+    begin
+      rand_second = $urandom_range(2**6 - 1, 0);
+      cmd_data[9:4] = rand_second;
+      send_cmd(cmd_data, SET_SECONDS);
+      @( negedge clk );
+      @( negedge clk );
+      
+      if( seconds_o != ( rand_second % 60 ) )
+        begin
+          $display("Seconds didn't setup!");
+          $stop();
+        end
+      cmd_data = 0;
+    end
+  $display("OK!");
+  
+  $write("Testing milliseconds set - ");
+  for( int i = 0; i < 100; i++ )
+    begin
+      rand_millisecond = $urandom_range(2**10 - 1, 0);
+      cmd_data = rand_millisecond;
+      send_cmd(cmd_data, SET_MILLISECONDS);
+      @( negedge clk );      
+      @( negedge clk ); 
+      
+      if( milliseconds_o != ( rand_millisecond % 1000 ) )
+        begin
+          $display("Milliseconds didn't setup!");
+          $stop();
+        end
+      cmd_data = 0;
+    end
+  $display("OK!");
+  
+  $write("Testing reset time - ");
+  send_cmd(cmd_data, RESET_TIME);
+  @( negedge clk );      
+  @( negedge clk ); 
+      
+  if( milliseconds_o != 0 )
+    begin
+      $display("Milliseconds didn't reset!");
+      $stop();
+    end
+  else if( seconds_o != 0 )
+    begin
+      $display("Seconds didn't reset!");
+      $stop();
+    end
+  else if( minutes_o != 0 )
+    begin
+      $display("Minutes didn't reset!");
+      $stop();
+    end
+  else if( hours_o != 0 )
+    begin
+      $display("Hours didn't reset!");
+      $stop();
+    end
+  cmd_data = 0;
+  
+  $display("OK!");
+  
 endtask
 
 
@@ -170,15 +282,27 @@ initial
     apply_rst();
     
     $display("Starting testbench!");
+    
+    $display("\n----------------------------------------------");
+    $display("Testing normal clock functionning. It might take a couple of minutes!");
     fork
       check_ms_proc();
       check_s_proc();
       check_min_proc();
       check_hr_proc();
     join
+    $display("Clock is working!");
+    $display("----------------------------------------------");
     
+    $display("\nTesting setups and resets");
+    fork
+      check_set_reset();
+    join
+    $display("\nSet and reset are working!");
+    $display("----------------------------------------------");
     
-    $display("Everything is fine!");
+    $display("\nEverything is fine!");
+    $stop();
   end
 
 

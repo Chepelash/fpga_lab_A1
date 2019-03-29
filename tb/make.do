@@ -13,10 +13,13 @@ add wave /rtc_clock_tb/rst
 add wave /rtc_clock_tb/cmd_valid_i
 add wave /rtc_clock_tb/cmd_type_i
 add wave /rtc_clock_tb/cmd_data_i
-add wave /rtc_clock_tb/hours_o
-add wave /rtc_clock_tb/minutes_o
-add wave /rtc_clock_tb/seconds_o
-add wave /rtc_clock_tb/milliseconds_o
+add wave -radix unsigned /rtc_clock_tb/hours_o
+add wave /rtc_clock_1/minutes_overflow
+add wave -radix unsigned /rtc_clock_tb/minutes_o
+add wave /rtc_clock_1/seconds_overflow
+add wave -radix unsigned /rtc_clock_tb/seconds_o
+add wave /rtc_clock_1/milliseconds_overflow
+add wave -radix unsigned /rtc_clock_tb/milliseconds_o
 
 
 run -all
